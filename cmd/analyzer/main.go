@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"git-history-onboarding/internal/git"
+	"git-history-onboarding/internal/analysis/features"
 )
 
 func main() {
@@ -42,14 +43,38 @@ func analyze(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("Found %d commits\n", len(commits))
 	
-	// Print commit information and changed files
-	for _, commit := range commits {
-		fmt.Printf("\nCommit: %s\n", commit.Commit.Hash)
-		fmt.Printf("Author: %s\n", commit.Commit.Author.Name)
-		fmt.Printf("Message: %s\n", commit.Commit.Message)
-		fmt.Printf("Changed files:\n")
-		for _, file := range commit.Files {
-			fmt.Printf("  - %s\n", file)
+	// Analyze features
+	analyzer := features.NewAnalyzer()
+	featureAnalysis := analyzer.AnalyzeCommits(commits)
+
+	// Print feature analysis
+	fmt.Println("\nFeature Analysis:")
+	for name, feature := range featureAnalysis {
+		fmt.Printf("\nFeature: %s\n", name)
+		fmt.Printf("Created: %s\n", feature.CreatedAt.Format("2006-01-02"))
+		fmt.Printf("Last Updated: %s\n", feature.LastUpdated.Format("2006-01-02"))
+		
+		fmt.Println("Primary Owners:")
+		for email, percentage := range feature.Owners {
+			fmt.Printf("  - %s (%.1f%%)\n", email, percentage*100)
+		}
+		
+		fmt.Println("Backup Owners:")
+		for email, percentage := range feature.BackupOwners {
+			fmt.Printf("  - %s (%.1f%%)\n", email, percentage*100)
+		}
+		
+		fmt.Printf("Number of Commits: %d\n", len(feature.Commits))
+		fmt.Printf("Number of Bugs: %d\n", len(feature.Bugs))
+		
+		if len(feature.Bugs) > 0 {
+			fmt.Println("Bug History:")
+			for _, bug := range feature.Bugs {
+				fmt.Printf("  - [%s] by %s: %s\n", 
+					bug.FixedAt.Format("2006-01-02"),
+					bug.AuthorEmail,
+					bug.Description)
+			}
 		}
 	}
 } 
